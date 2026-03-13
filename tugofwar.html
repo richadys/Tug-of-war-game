@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Math Tug Of War</title>
+
+<style>
+
+body{
+font-family:Arial;
+text-align:center;
+background:#f5f5f5;
+}
+
+h1{
+margin-top:10px;
+}
+
+.timer{
+font-size:26px;
+margin-top:10px;
+}
+
+#difficulty{
+font-size:18px;
+margin-top:5px;
+color:#444;
+}
+
+.scoreboard{
+margin-top:10px;
+font-size:20px;
+}
+
+#winner{
+font-size:32px;
+margin-top:10px;
+color:#222;
+}
+
+.characters{
+display:flex;
+justify-content:space-between;
+width:520px;
+margin:20px auto;
+font-size:40px;
+}
+
+.teamChars{
+transition:0.25s;
+}
+
+.pullLeft{
+transform:translateX(-20px) rotate(-15deg);
+}
+
+.pullRight{
+transform:translateX(20px) rotate(15deg);
+}
+
+.gameArea{
+margin-top:20px;
+}
+
+.rope{
+width:500px;
+height:10px;
+background:brown;
+margin:auto;
+position:relative;
+border-radius:10px;
+}
+
+.marker{
+width:20px;
+height:20px;
+background:red;
+position:absolute;
+top:-5px;
+left:240px;
+transition:0.3s;
+border-radius:50%;
+}
+
+.container{
+display:flex;
+justify-content:space-around;
+margin-top:30px;
+}
+
+.team{
+width:35%;
+padding:20px;
+border-radius:10px;
+}
+
+.team1{
+background:#cce5ff;
+}
+
+.team2{
+background:#ffcccc;
+}
+
+.question{
+font-size:28px;
+margin-bottom:10px;
+}
+
+.buttons button{
+width:70px;
+height:70px;
+font-size:22px;
+margin:5px;
+border:none;
+border-radius:10px;
+background:#fff;
+box-shadow:0 2px 4px rgba(0,0,0,0.3);
+cursor:pointer;
+transition:0.2s;
+}
+
+.buttons button:hover{
+background:#eee;
+}
+
+.correct{
+background:#4CAF50 !important;
+color:white;
+}
+
+.wrong{
+background:#f44336 !important;
+color:white;
+}
+
+.resetBtn{
+margin-top:20px;
+padding:10px 20px;
+font-size:18px;
+cursor:pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Math Tug Of War</h1>
+
+<div class="timer">
+Time: <span id="time">60</span>
+</div>
+
+<div id="difficulty">Difficulty: Easy</div>
+
+<div class="scoreboard">
+Team 1: <span id="score1">0</span> |
+Team 2: <span id="score2">0</span>
+</div>
+
+<div id="winner"></div>
+
+<div class="characters">
+
+<div id="team1chars" class="teamChars">
+🧍‍♂️ 🧍‍♂️ 🧍‍♂️
+</div>
+
+<div id="team2chars" class="teamChars">
+🧍‍♂️ 🧍‍♂️ 🧍‍♂️
+</div>
+
+</div>
+
+<div class="gameArea">
+<div class="rope">
+<div class="marker" id="marker"></div>
+</div>
+</div>
+
+<div class="container">
+
+<div class="team team1">
+<div class="question" id="q1"></div>
+<div class="buttons" id="btn1"></div>
+</div>
+
+<div class="team team2">
+<div class="question" id="q2"></div>
+<div class="buttons" id="btn2"></div>
+</div>
+
+</div>
+
+<button class="resetBtn" onclick="resetGame()">Reset Game</button>
+
+<script>
+
+let markerPos = 240
+let score1 = 0
+let score2 = 0
+
+/* SOUND SYSTEM */
+
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+
+function playSound(freq){
+
+let osc = audioCtx.createOscillator()
+let gain = audioCtx.createGain()
+
+osc.connect(gain)
+gain.connect(audioCtx.destination)
+
+osc.frequency.value = freq
+osc.type = "sine"
+
+osc.start()
+
+gain.gain.exponentialRampToValueAtTime(
+0.0001,
+audioCtx.currentTime + 0.4
+)
+
+}
+
+/* animation */
+
+function animatePull(team){
+
+if(team===1){
+
+let t=document.getElementById("team1chars")
+t.classList.add("pullLeft")
+
+setTimeout(()=>{
+t.classList.remove("pullLeft")
+},250)
+
+}
+
+if(team===2){
+
+let t=document.getElementById("team2chars")
+t.classList.add("pullRight")
+
+setTimeout(()=>{
+t.classList.remove("pullRight")
+},250)
+
+}
+
+}
+
+/* QUESTION GENERATOR WITH + - × ÷ */
+
+function randomQuestion(){
+
+let a,b,answer,question
+let difficulty="Easy"
+
+/* difficulty */
+
+if(time>40){
+a=Math.floor(Math.random()*10)+1
+b=Math.floor(Math.random()*10)+1
+difficulty="Easy"
+}
+
+else if(time>20){
+a=Math.floor(Math.random()*20)+5
+b=Math.floor(Math.random()*20)+5
+difficulty="Medium"
+}
+
+else{
+a=Math.floor(Math.random()*50)+10
+b=Math.floor(Math.random()*50)+10
+difficulty="Hard"
+}
+
+let op=Math.floor(Math.random()*4)
+
+if(op===0){
+
+question=a+" + "+b+" = ?"
+answer=a+b
+
+}
+
+else if(op===1){
+
+if(a<b){ let t=a; a=b; b=t }
+
+question=a+" - "+b+" = ?"
+answer=a-b
+
+}
+
+else if(op===2){
+
+question=a+" × "+b+" = ?"
+answer=a*b
+
+}
+
+else{
+
+answer=Math.floor(Math.random()*10)+1
+b=Math.floor(Math.random()*10)+1
+a=answer*b
+
+question=a+" ÷ "+b+" = ?"
+
+}
+
+document.getElementById("difficulty").innerText =
+"Difficulty: "+difficulty
+
+return{
+question:question,
+answer:answer
+}
+
+}
+
+/* create question */
+
+function createQuestion(team){
+
+let data=randomQuestion()
+
+let qEl=document.getElementById("q"+team)
+let btnArea=document.getElementById("btn"+team)
+
+qEl.innerText=data.question
+
+let answers=[data.answer]
+
+while(answers.length<4){
+
+let wrong=data.answer+Math.floor(Math.random()*10)-5
+
+if(!answers.includes(wrong)){
+answers.push(wrong)
+}
+
+}
+
+answers.sort(()=>Math.random()-0.5)
+
+btnArea.innerHTML=""
+
+answers.forEach(val=>{
+
+let btn=document.createElement("button")
+
+btn.innerText=val
+
+btn.onclick=()=>checkAnswer(team,val,data.answer,btn)
+
+btnArea.appendChild(btn)
+
+})
+
+}
+
+
+function checkAnswer(team,val,correct,btn){
+
+if(val===correct){
+
+btn.classList.add("correct")
+
+playSound(600)
+
+if(team===1){
+score1++
+markerPos+=20
+animatePull(1)
+}
+
+if(team===2){
+score2++
+markerPos-=20
+animatePull(2)
+}
+
+update()
+
+}else{
+
+btn.classList.add("wrong")
+playSound(200)
+
+}
+
+setTimeout(()=>createQuestion(team),400)
+
+}
+
+
+function update(){
+
+markerPos=Math.max(0,Math.min(480,markerPos))
+
+document.getElementById("marker").style.left=markerPos+"px"
+
+document.getElementById("score1").innerText=score1
+document.getElementById("score2").innerText=score2
+
+}
+
+let time=60
+
+let timer=setInterval(function(){
+
+time--
+
+document.getElementById("time").innerText=time
+
+if(time<=0){
+
+clearInterval(timer)
+
+playSound(900)
+
+let winner=document.getElementById("winner")
+
+if(score1>score2){
+winner.innerText="🏆 Team 1 Wins!"
+}
+
+else if(score2>score1){
+winner.innerText="🏆 Team 2 Wins!"
+}
+
+else{
+winner.innerText="🤝 Draw Game!"
+}
+
+}
+
+},1000)
+
+
+
+function resetGame(){
+location.reload()
+}
+
+
+
+createQuestion(1)
+createQuestion(2)
+
+</script>
+
+</body>
+</html>
